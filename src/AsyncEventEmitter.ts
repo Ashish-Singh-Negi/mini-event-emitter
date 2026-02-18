@@ -15,34 +15,43 @@ export class AsyncEventEmitter {
     }>
   > = new Map();
 
-  concurrency = 1;
-
-  taskQueue = [];
-
-  constructor({ concurrency }: { concurrency: number }) {
-    this.concurrency = concurrency;
-  }
+  constructor() {}
 
   // register a event with listeners
   on(event: string, handler: any) {
+    // check if event name already registered
     const eventObj = this.eventMap.get(event);
     if (eventObj) {
-      eventObj.add(handler);
+      eventObj.add({
+        fn: handler,
+        isOnce: false,
+      });
       return;
     }
 
-    this.eventMap.set(event, new Set(handler));
+    // register new event
+    this.eventMap.set(event, new Set([{ fn: handler, isOnce: false }]));
   }
 
-  emit(event: string, ...args: any[]) {}
+  // emit all handlers with registered event name
+  emit(event: string, ...args: any[]) {
+    const eventObj = this.eventMap.get(event);
 
-  off(event: string, handler: any) {
-    this.eventMap.set(event, new Set());
+    console.log(eventObj);
+
+    if (eventObj) {
+      for (const obj of eventObj!) {
+        if (obj.isOnce) {
+          obj.fn(...args);
+
+          // remove handler after emitted once
+          eventObj.delete({ fn: obj.fn, isOnce: obj.isOnce });
+        } else {
+          obj.fn(...args);
+        }
+      }
+    }
+
+    console.log(eventObj);
   }
-
-  //   once(event: string, handler: any) {
-  //     const eventObj = { event };
-
-  //     this.onceEventMap.set(eventObj, handler);
-  //   }
 }
